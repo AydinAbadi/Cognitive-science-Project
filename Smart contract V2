@@ -1,0 +1,154 @@
+pragma solidity ^0.5.0;
+
+contract CogScience_project {
+    
+    int public max_score;
+    int public min_score;
+    uint public totalNum_transactions; // it's used as transaction's ID too.
+
+    address public owner;
+    //mapping (address => uint) public totalNumOf_transactions; // stores how many transactions with students has been involved in.
+    //mapping (uint => bool) public valid_student_num; 
+    mapping (uint => Pair) public valid_student_num; 
+    mapping (address => bool) public valid_student_addr;
+    mapping (address => bool) public valid_admins;
+    mapping (address => uint) public student_token_balance;
+    mapping (address => uint) public totalNumOf_tokens_traded; // keeps track of total tokens sent/recived by each student.
+    mapping (address  => int) public reputations; // mapping (address reciver  => int score) 
+    mapping (uint => Transaction) public transactions; // mapping (uint transaction id/counter => Transaction)
+
+    struct Pair{
+       
+        bool validStudent_num;
+        bool token_assigned;
+    }
+
+    struct Transaction{
+        
+        address sender;
+        address reciever;
+        string reason; 
+        int TokenSender_feedback; // feedback provided by the sender to tokens.
+        int TokenReciever_feedback; // feedback provided by  the reciever of tokens.
+        uint transaction_ID;
+        uint numOf_tokens; // number of tokens sent in this transaction.
+    }
+    
+    constructor(address admin) public{
+        
+        owner = msg.sender;
+        valid_admins[admin] = true;
+        valid_admins[msg.sender] = true; // so the deployer can be admin too.
+        max_score = 5;
+        min_score = -5;
+    }
+    
+    modifier only_admin(){
+        
+        require(valid_admins[msg.sender] == true);
+        _;
+    }
+    
+    modifier only_owner(){
+        
+        require(msg.sender == owner);
+        _;
+    }
+    
+    function add_admin(address new_admin) external only_owner{
+        
+        valid_admins[new_admin] = true;
+    }
+    
+    function remove_admin(address admin) external only_owner{
+        
+        valid_admins[admin] = false;
+    }
+    // Allows a valid admin to send some tokens to students.
+    function distribute_token(address std_addr, uint numOf_tokens) external only_admin{
+        
+        require(valid_student_addr[std_addr] == true);
+        student_token_balance[std_addr] += numOf_tokens;
+    }
+    
+    function register_std_num(uint std_num) external only_admin{ // this is done when a list of students enroled for the course is finalised. 
+        
+        valid_student_num[std_num].validStudent_num = true;
+    }
+
+    function register_std_addr(address std_addr, uint std_num) external only_admin{
+        
+         require(valid_student_num[std_num].validStudent_num == true); // check if the student has enroled the course
+         require(valid_student_num[std_num].token_assigned == false); // ensures a student cannot registers itself with multiple public keys
+         valid_student_num[std_num].token_assigned = true;
+         valid_student_addr[std_addr] = true;
+         student_token_balance[std_addr] = 10; // it allocates 10 tokens to the regitered student.
+    }
+    
+    function send_token(uint amount, address recipient_address, string calldata _reason) external{
+        
+        require(msg.sender!=recipient_address); // the sender should not be able to send token to itself and make a transaction. 
+        require(valid_student_addr[msg.sender] == true, "Not a valid sender"); // checks if the sender is a valid student
+        require(valid_student_addr[recipient_address] == true, "Not a valid recipient"); // checks if the recipient is a valid student
+        require(student_token_balance[msg.sender] >= amount,"Not enough token");  // check if the sender has enough token.
+        student_token_balance[msg.sender] -= amount;
+        student_token_balance[recipient_address] += amount;
+        totalNumOf_tokens_traded[msg.sender] += amount; 
+        totalNumOf_tokens_traded[recipient_address] += amount;
+        Transaction memory trans;
+        // stores each transaction's details in "transactions".
+        totalNum_transactions += 1;
+        trans.sender = msg.sender;
+        trans.reciever = recipient_address;
+        trans.reason = _reason;
+        trans.numOf_tokens = amount; 
+        trans.transaction_ID = totalNum_transactions;
+        trans.TokenSender_feedback = -10; // we allocate -10 to show no feedback has been provided. Note that 0 is among valid scores and it's also a default value for uint types. 
+        trans.TokenReciever_feedback = -10; // see above
+        transactions[totalNum_transactions] = trans;
+    }
+    
+    function canLeave_feedback(address feedback_sender, uint transaction_id) internal returns (bool can, uint res){ 
+        
+        // checks if the person who wants to leave the feedback is sender of tokens AND has not left any feedback for the transaction.
+        if(transactions[transaction_id].sender == feedback_sender && transactions[transaction_id].TokenSender_feedback == -10){
+            res = 1;
+            can = true;
+        }
+        // checks if the person who wants to leave the feedback is reciever of tokens AND has not left any feedback for the transaction.
+        else if(transactions[transaction_id].reciever == feedback_sender && transactions[transaction_id].TokenReciever_feedback == -10){
+            res = 2;
+            can = true;
+        }
+    }
+    // the sender of the feedback needs to first check the list of the transactions and see which transaction it wants to leave feedback 
+    // then it needs to read the transaction ID. 
+    function leave_feedback(uint transaction_id, int score) external{
+       
+        require (min_score <= score && score <= max_score);  // check if the score is valid: min_score <= score <= max_score
+        (bool can, uint res) = canLeave_feedback(msg.sender, transaction_id); // check if the the sender of the feedback is one of the parties involded in the transaction and has not already left any feedback yet. 
+        require(can);
+        if (res == 1){ 
+            transactions[transaction_id].TokenSender_feedback = score; 
+            reputations[transactions[transaction_id].reciever] += score;
+        }
+        else if (res == 2){ 
+            transactions[transaction_id].TokenReciever_feedback = score; 
+            reputations[transactions[transaction_id].sender] += score;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
