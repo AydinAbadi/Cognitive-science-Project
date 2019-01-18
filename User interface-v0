@@ -1,11 +1,10 @@
-
-
-
 <!DOCTYPE html>
-
-<!-- This version works with Metamask can can invoke the wallet.  --> 
+<!-- This version works with Metamask and can invoke the wallet. It does not have all the functions yet -->
 <html>
 <script language="javascript" type="text/javascript" src="web3.min.js"></script>
+<!--  -->
+
+
 <h3>Admin Login</h3>
 </center>
   <div class="col-sm-4">
@@ -26,6 +25,7 @@
 <br><br><button  onclick="get_transactions()">Get Transactions</button>
 <div id="destination_1"></div>
 
+<br><br>
 <div class="col-sm-4">
 <br><label for="stud_num">Student Number:</label><input type="text" id="stud_num" placeholder="e.g. 5467"></input>
 <br><br><button  onclick="register_std_num()">Register Student's Number</button>
@@ -36,14 +36,14 @@
 
 <script>
 
-// Defines a service provider, i.e. connect to the blockchain via web3
+// Define a service provider, i.e. connect to the blockchain via web3
 var web3;
 if (typeof web3 !== 'undefined') { web3 = new Web3(web3.currentProvider);console.log("web3.currentProvider"); } else {
    // set the provider you want
    console.log("http://localhost:8545");
     web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545")); }
 
-// Checks if Metamask has been Enjected
+// Check if Metamask has been Enjected
 if (window.web3.currentProvider.isMetaMask) {console.log("MetaMask has been injected");}
 else{console.log("MetaMask has not been injected");}
 
@@ -401,10 +401,15 @@ var abi = [
 
 
 var ins = web3.eth.contract(abi);
+// note that "0x351f3a861c1c6bbffdc8f5e8e39dee7762d17bd1" is the address of the contract on the blockchain
 var myContract = ins.at("0x351f3a861c1c6bbffdc8f5e8e39dee7762d17bd1");
 var account;
-//var unlocked=false;
 
+
+// in UI, the user needs to provide its address in order to invoke a function.
+//We need to make sure all below functions that invoke the contract function check if the
+//user has loged in. the register_std_num() belows does so. However, those function that only reads
+// the staet of the contract (in other words those that use .call()) do not need to chehck that.
 function logIn(){
 
   document.getElementById("Fill_box_alert3").innerHTML = "";
@@ -414,7 +419,7 @@ function logIn(){
   account =document.getElementById("addrx").value;
 }
 
-// "result" needs to be displayed on the main page of UI (at the momnet it's shown only on the console)
+//***** "result" needs to be displayed on the main page of the UI. At the momnet it's shown only on the console.
 function get_owner() {
 
     var res= document.getElementById("res");
@@ -427,26 +432,23 @@ function get_owner() {
 //Looks fine.
 function register_std_num(){
 
-  //check if the admin has signed it
+  //check if the admin has signed it.
   document.getElementById("Fill_box_alert3").innerHTML = "";
   if (document.getElementById('addrx').value === ''){
     document.getElementById("Fill_box_alert3").innerHTML = "All fields must be filled in!";
   }
-
-  return; //does nothing if the admin has not signed in yet.
+  return; //do nothing if the user/admin has not signed in yet.
   var stud_num = document.getElementById("stud_num").value;
   myContract.register_std_num(stud_num,{from:account ,gas:4200000},function(error,result){
     if(error) alert("Error:Transaction has not been sent")}
-
 )}
 
 function get_transactions(){
-//**** All below needs to be turned to a async version to be compatible with MetaMask
-  var minus_ten=-10;
-  var str_minus_ten= minus_ten.toString();
+//**** All below needs to be turned to a async version to be compatible with MetaMask.
+  var minus_ten =- 10;
+  var str_minus_ten = minus_ten.toString();
   var receiverD = document.getElementById("receiver_E").value;
-  // **** it needs to read the total number of transactions and set that as the loops upper bound
-  var _totalNum_transactions= myContract.totalNum_transactions.call();
+  var _totalNum_transactions = myContract.totalNum_transactions.call();
   for (var i = 1;i < _totalNum_transactions + 1 ;i++){
     var a=[];
     var val=myContract.transactions.call(i);
@@ -460,7 +462,6 @@ function get_transactions(){
       if (val[4].valueOf()==str_minus_ten){
       a.push('&nbsp Token Reciepient Feedback: &nbsp' + "Not Provided Yet");}
       else {a.push('&nbsp Token Reciepient Feedback: &nbsp' + val[4].valueOf());}
-
       a.push('&nbsp Transaction ID: &nbsp' + val[5].valueOf());
       a.push('&nbsp Number of Tokens Sent: &nbsp' + val[6].valueOf());
       document.getElementById('destination_1').innerHTML += '<p>'+  a + '</p>';
@@ -469,36 +470,43 @@ function get_transactions(){
 
 }
 
-
-// the following functions are needed to be completed.
+//------ these functions send transactions to the blockckhain and change the smart contract state.
 function add_admin() {
-
 }
 
 function remove_admin() {
-
 }
 
 function distribute_token(){
-
 }
 
 function register_std_num() {
-
 }
 
 function register_std_addr() {
-
-
 }
 
 function send_token(){
-
 }
 
 function leave_feedback(){
-
 }
+//--------------------------------------
+
+//******** the following functions only read the blockckhain/smart contract content and do not change the smart contract state.
+
+function student_token_balance(){
+//given student's address it reads the content of "student_token_balance" in the contract and returns a value
+}
+
+function totalNumOf_tokens_traded(){
+//given student's address it reads the content of "totalNumOf_tokens_traded" in the contract and returns a value
+}
+
+function reputations(){
+  //given student's address it reads the content of "reputations" in the contract and returns a value.
+}
+//********
 
 
 
