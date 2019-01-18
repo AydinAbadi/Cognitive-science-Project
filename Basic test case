@@ -1,0 +1,26 @@
+Basic test case
+
+1-	Create 6 accounts, (e.g. account 1-account 6), on Metamask that will create 6 addresses each for an account.
+
+2-	Let account 1 and account 2 belong to the owner and admin respectively.
+
+3-	use remix to deploy the contract.  Pass adman’s address to the contractor when deploying it: deploy (admin’s address).
+
+4-	Admin adds 4 student numbers: 1, 2, 3, and 4
+
+5-	Admin adds the student’s public keys to the system.
+
+6-	Student 1 sends 1 token to student 2
+
+7-	Student 3 sends 2 tokens to student 4
+
+8-	Student 1 leaves feedback for student 2
+
+9-	Student 3 leaves feedback for student 4. 
+
+10-	Student 2 leaves feedback for student 1.
+
+11-	Student 4 leaves feedback for student 3.
+
+
+
