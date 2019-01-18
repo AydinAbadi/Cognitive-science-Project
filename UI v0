@@ -1,0 +1,506 @@
+
+
+
+<!DOCTYPE html>
+
+<!-- This version works with Metamask can can invoke the wallet.  --> 
+<html>
+<script language="javascript" type="text/javascript" src="web3.min.js"></script>
+<h3>Admin Login</h3>
+</center>
+  <div class="col-sm-4">
+<br><label for="receiverD">Admin Address: </label><input type="text" id="addrx" placeholder="e.g.0x863c7b1600b9312f85501dbc933a862b63dad374"></input>
+<br><br><button   type="button"  class="btn btn-outline-primary" id="send44" onclick="logIn()">Login</button>
+<div style="padding-left:40px;color:red"  id="Fill_box_alert3"> </div>
+<br>
+</div></div>
+   <br>
+
+<body>
+<br><br><button  onclick="get_owner()">Get Owner</button>
+<p id="res"></p>
+<br><br>
+
+<div class="col-sm-4">
+<br><label for="receiver_E">Address:</label><input type="text" id="receiver_E" placeholder="e.g. 0xe6d99924fb69b4a3c0f61dc99bc778b3d0a1de33"></input>
+<br><br><button  onclick="get_transactions()">Get Transactions</button>
+<div id="destination_1"></div>
+
+<div class="col-sm-4">
+<br><label for="stud_num">Student Number:</label><input type="text" id="stud_num" placeholder="e.g. 5467"></input>
+<br><br><button  onclick="register_std_num()">Register Student's Number</button>
+
+</body>
+</html>
+<!--  -->
+
+<script>
+
+// Defines a service provider, i.e. connect to the blockchain via web3
+var web3;
+if (typeof web3 !== 'undefined') { web3 = new Web3(web3.currentProvider);console.log("web3.currentProvider"); } else {
+   // set the provider you want
+   console.log("http://localhost:8545");
+    web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545")); }
+
+// Checks if Metamask has been Enjected
+if (window.web3.currentProvider.isMetaMask) {console.log("MetaMask has been injected");}
+else{console.log("MetaMask has not been injected");}
+
+//------------
+
+// The contract's ABI
+var abi = [
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "new_admin",
+				"type": "address"
+			}
+		],
+		"name": "add_admin",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "std_addr",
+				"type": "address"
+			},
+			{
+				"name": "numOf_tokens",
+				"type": "uint256"
+			}
+		],
+		"name": "distribute_token",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "transaction_id",
+				"type": "uint256"
+			},
+			{
+				"name": "score",
+				"type": "int256"
+			}
+		],
+		"name": "leave_feedback",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "std_addr",
+				"type": "address"
+			},
+			{
+				"name": "std_num",
+				"type": "uint256"
+			}
+		],
+		"name": "register_std_addr",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "std_num",
+				"type": "uint256"
+			}
+		],
+		"name": "register_std_num",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "admin",
+				"type": "address"
+			}
+		],
+		"name": "remove_admin",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"name": "recipient_address",
+				"type": "address"
+			},
+			{
+				"name": "_reason",
+				"type": "string"
+			}
+		],
+		"name": "send_token",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"name": "admin",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "max_score",
+		"outputs": [
+			{
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "min_score",
+		"outputs": [
+			{
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "reputations",
+		"outputs": [
+			{
+				"name": "",
+				"type": "int256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "student_token_balance",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "totalNum_transactions",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "totalNumOf_tokens_traded",
+		"outputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "transactions",
+		"outputs": [
+			{
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"name": "reciever",
+				"type": "address"
+			},
+			{
+				"name": "reason",
+				"type": "string"
+			},
+			{
+				"name": "TokenSender_feedback",
+				"type": "int256"
+			},
+			{
+				"name": "TokenReciever_feedback",
+				"type": "int256"
+			},
+			{
+				"name": "transaction_ID",
+				"type": "uint256"
+			},
+			{
+				"name": "numOf_tokens",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "valid_admins",
+		"outputs": [
+			{
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "valid_student_addr",
+		"outputs": [
+			{
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "valid_student_num",
+		"outputs": [
+			{
+				"name": "validStudent_num",
+				"type": "bool"
+			},
+			{
+				"name": "token_assigned",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
+
+
+var ins = web3.eth.contract(abi);
+var myContract = ins.at("0x351f3a861c1c6bbffdc8f5e8e39dee7762d17bd1");
+var account;
+//var unlocked=false;
+
+function logIn(){
+
+  document.getElementById("Fill_box_alert3").innerHTML = "";
+  if (document.getElementById('addrx').value === ''){
+    document.getElementById("Fill_box_alert3").innerHTML = "All fields must be filled in!";
+  }
+  account =document.getElementById("addrx").value;
+}
+
+// "result" needs to be displayed on the main page of UI (at the momnet it's shown only on the console)
+function get_owner() {
+
+    var res= document.getElementById("res");
+    var f= myContract.owner.call( function(err, result) {
+      if (!err)
+      alert(result);
+    });
+    }
+
+//Looks fine.
+function register_std_num(){
+
+  //check if the admin has signed it
+  document.getElementById("Fill_box_alert3").innerHTML = "";
+  if (document.getElementById('addrx').value === ''){
+    document.getElementById("Fill_box_alert3").innerHTML = "All fields must be filled in!";
+  }
+
+  return; //does nothing if the admin has not signed in yet.
+  var stud_num = document.getElementById("stud_num").value;
+  myContract.register_std_num(stud_num,{from:account ,gas:4200000},function(error,result){
+    if(error) alert("Error:Transaction has not been sent")}
+
+)}
+
+function get_transactions(){
+//**** All below needs to be turned to a async version to be compatible with MetaMask
+  var minus_ten=-10;
+  var str_minus_ten= minus_ten.toString();
+  var receiverD = document.getElementById("receiver_E").value;
+  // **** it needs to read the total number of transactions and set that as the loops upper bound
+  var _totalNum_transactions= myContract.totalNum_transactions.call();
+  for (var i = 1;i < _totalNum_transactions + 1 ;i++){
+    var a=[];
+    var val=myContract.transactions.call(i);
+    if(receiverD.toUpperCase() == val[0].toUpperCase() ||receiverD.toUpperCase() == val[1].toUpperCase()){
+      a.push('Token Sender Address: &nbsp' + val[0].valueOf());
+      a.push('&nbsp Token  Recipient Address: &nbsp' + val[1].valueOf());
+      a.push('&nbsp Reason: &nbsp' + val[2].valueOf());
+      if (val[3].valueOf()==str_minus_ten){
+      a.push('&nbsp Token Sender Feedback: &nbsp' + "Not Provided Yet");}
+      else {a.push('&nbsp Token Sender Feedback: &nbsp' + val[3].valueOf());}
+      if (val[4].valueOf()==str_minus_ten){
+      a.push('&nbsp Token Reciepient Feedback: &nbsp' + "Not Provided Yet");}
+      else {a.push('&nbsp Token Reciepient Feedback: &nbsp' + val[4].valueOf());}
+
+      a.push('&nbsp Transaction ID: &nbsp' + val[5].valueOf());
+      a.push('&nbsp Number of Tokens Sent: &nbsp' + val[6].valueOf());
+      document.getElementById('destination_1').innerHTML += '<p>'+  a + '</p>';
+  }
+}
+
+}
+
+
+// the following functions are needed to be completed.
+function add_admin() {
+
+}
+
+function remove_admin() {
+
+}
+
+function distribute_token(){
+
+}
+
+function register_std_num() {
+
+}
+
+function register_std_addr() {
+
+
+}
+
+function send_token(){
+
+}
+
+function leave_feedback(){
+
+}
+
+
+
+
+</script>
