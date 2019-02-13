@@ -5,7 +5,7 @@ contract CogScience_project {
     int public max_score;
     int public min_score;
     uint public totalNum_transactions; // it's used as transaction's ID too.
-    uint public totalNum_offers;
+    uint public totalNum_proposals;
     uint public lecture_tokens; // it keeps a fixed number of tokens.
     uint public current_lecture_number;
     address public owner;
@@ -137,10 +137,10 @@ contract CogScience_project {
         proposal_.creator_address = msg.sender;
         proposal_.creator_emailAdress = email_address_;
         proposal_.reason = reason_;
-        totalNum_offers++;
-        proposal_.proposal_ID = totalNum_offers;
+        totalNum_proposals++;
+        proposal_.proposal_ID = totalNum_proposals;
         proposal_.active = true;
-        proposals[totalNum_offers] = proposal_;
+        proposals[totalNum_proposals] = proposal_;
     }
     
     function send_token(uint amount, address recipient_address, string calldata _reason,string calldata time_, uint offer_ID_) external{
