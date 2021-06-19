@@ -1,14 +1,22 @@
+// SPDX-License-Identifier: 
 pragma solidity ^0.5.0;
 
-contract CogScienceProject {
+/**
+ * @author A B
+ * @title ValuED contract - for cognitive science project
+ */
+contract ValuED {
     
-    int public maxScore;
-    int public minScore;
-    uint public totalNum_transactions; // it's used as transaction's ID too.
-    uint public totalNum_proposals;
-    uint public lecture_tokens; // it keeps a fixed number of tokens.
-    uint public current_lecture_number;
     address public owner;
+    
+    int public constant MAX_SCORE = 5;
+    int public constant MIN_SCORE = -5;
+    uint public constant LECTURE_TOKENS = 5; // it keeps a fixed number of tokens.
+    
+    uint public transactionsCount; // it's used as transaction's ID too.
+    uint public proposalsCount;
+    uint public currentLectureNumber;
+    
     mapping (uint => Pair) public valid_student_num; 
     mapping (uint => Proposal) public proposals;
     mapping (address => bool) public valid_student_addr;
@@ -56,9 +64,6 @@ contract CogScienceProject {
         owner = msg.sender;
         valid_admins[admin] = true;
         valid_admins[msg.sender] = true; // so the deployer can be admin too.
-        maxScore = 5;
-        minScore = -5;
-        lecture_tokens = 5;
     }
     
     modifier only_admin(){
@@ -111,18 +116,18 @@ contract CogScienceProject {
     
    function set_currentlecture_number(uint num) external only_admin{
        
-       current_lecture_number = num;
+       currentLectureNumber = num;
    } 
-     // This function allows a student to claim a fixed number of tokens (lecture_tokens), if it could prove its attentance in a lecture  (e.g. by uploading a QR code in the UI). If approved 
+     // This function allows a student to claim a fixed number of tokens (LECTURE_TOKENS), if it could prove its attentance in a lecture  (e.g. by uploading a QR code in the UI). If approved 
     // (in the UI) then UI calls this function. 
     function claim_token(string calldata input_) external{
         
         require(valid_student_addr[msg.sender] == true);// checks if it's a valid student
-        require(hash_lectureID[current_lecture_number] == bytes2(keccak256(bytes(input_))));//checks if the student has sent a valid id 
-        require(attended[msg.sender] != current_lecture_number);// ensures the student has not already claimed any tokens for this lecture yet.
-        attended[msg.sender] = current_lecture_number;
-        student_token_balance[msg.sender] += lecture_tokens;
-        total_participants[current_lecture_number]++;
+        require(hash_lectureID[currentLectureNumber] == bytes2(keccak256(bytes(input_))));//checks if the student has sent a valid id 
+        require(attended[msg.sender] != currentLectureNumber);// ensures the student has not already claimed any tokens for this lecture yet.
+        attended[msg.sender] = currentLectureNumber;
+        student_token_balance[msg.sender] += LECTURE_TOKENS;
+        total_participants[currentLectureNumber]++;
     }
     
     // in the UI, each student should be able to see a list of active offers he/she has made. This allows the student
@@ -137,10 +142,10 @@ contract CogScienceProject {
         proposal_.creator_address = msg.sender;
         proposal_.creator_emailAdress = email_address_;
         proposal_.reason = reason_;
-        totalNum_proposals++;
-        proposal_.proposal_ID = totalNum_proposals;
+        proposalsCount++;
+        proposal_.proposal_ID = proposalsCount;
         proposal_.active = true;
-        proposals[totalNum_proposals] = proposal_;
+        proposals[proposalsCount] = proposal_;
     }
     
     function send_token(uint amount, address recipient_address, string calldata _reason,string calldata time_, uint offer_ID_) external{
@@ -160,16 +165,16 @@ contract CogScienceProject {
         totalNumOf_tokens_traded[recipient_address] += amount;
         Transaction memory trans;
         // stores each transaction's details in "transactions".
-        totalNum_transactions += 1;
+        transactionsCount += 1;
         trans.sender = msg.sender;
         trans.reciever = recipient_address;
         trans.reason = _reason;
         trans.numOf_tokens = amount; 
         trans.creation_time = time_;
-        trans.transaction_ID = totalNum_transactions;
+        trans.transaction_ID = transactionsCount;
         trans.TokenSender_feedback = -10; // we allocate -10 to show no feedback has been provided. Note that 0 is among valid scores and it's also a default value for uint types. 
         trans.TokenReciever_feedback = -10; // see above
-        transactions[totalNum_transactions] = trans;
+        transactions[transactionsCount] = trans;
     }
     
     function canLeave_feedback(address feedback_sender, uint transaction_id) internal returns (bool can, uint res){ 
@@ -189,7 +194,7 @@ contract CogScienceProject {
     // then it needs to read the transaction ID. 
     function leave_feedback(uint transaction_id, int score) external{
        
-        require (minScore <= score && score <= maxScore);  // check if the score is valid: minScore <= score <= maxScore
+        require (MIN_SCORE <= score && score <= MAX_SCORE);  // check if the score is valid: MIN_SCORE <= score <= MAX_SCORE
         (bool can, uint res) = canLeave_feedback(msg.sender, transaction_id); // check if the the sender of the feedback is one of the parties involded in the transaction and has not already left any feedback yet. 
         require(can);
         if (res == 1){ 
