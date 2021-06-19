@@ -1,9 +1,9 @@
 pragma solidity ^0.5.0;
 
-contract CogScience_project {
+contract CogScienceProject {
     
-    int public max_score;
-    int public min_score;
+    int public maxScore;
+    int public minScore;
     uint public totalNum_transactions; // it's used as transaction's ID too.
     uint public totalNum_proposals;
     uint public lecture_tokens; // it keeps a fixed number of tokens.
@@ -56,8 +56,8 @@ contract CogScience_project {
         owner = msg.sender;
         valid_admins[admin] = true;
         valid_admins[msg.sender] = true; // so the deployer can be admin too.
-        max_score = 5;
-        min_score = -5;
+        maxScore = 5;
+        minScore = -5;
         lecture_tokens = 5;
     }
     
@@ -189,7 +189,7 @@ contract CogScience_project {
     // then it needs to read the transaction ID. 
     function leave_feedback(uint transaction_id, int score) external{
        
-        require (min_score <= score && score <= max_score);  // check if the score is valid: min_score <= score <= max_score
+        require (minScore <= score && score <= maxScore);  // check if the score is valid: minScore <= score <= maxScore
         (bool can, uint res) = canLeave_feedback(msg.sender, transaction_id); // check if the the sender of the feedback is one of the parties involded in the transaction and has not already left any feedback yet. 
         require(can);
         if (res == 1){ 
