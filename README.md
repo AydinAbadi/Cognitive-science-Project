@@ -37,3 +37,8 @@ Smart contract stores:
 6- Each token transaction in detail, i.e. who send how many tokens to whom for what reason.
 
 7- Valid student’s reputation.
+
+## Run with docker
+
+docker run -v "`pwd`":/mnt ethereum/solc:0.5.0 mnt/smart-contract.sol
+
