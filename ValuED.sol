@@ -250,7 +250,7 @@ contract ValuED {
      * 
      * @return (can, res)
      */
-    function canLeaveFeedback(address sender, uint transactionID) internal returns (bool can, uint res){ 
+    function canLeaveFeedback(address sender, uint transactionID) view internal returns (bool can, uint res){ 
         // checks if the person who wants to leave the feedback is sender of tokens AND has not left any feedback for the transaction.
         if(transactions[transactionID].sender == sender && transactions[transactionID].senderFeedback == -10){
             res = 1;
