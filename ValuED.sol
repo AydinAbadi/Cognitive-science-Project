@@ -10,6 +10,7 @@ contract ValuED {
     int public constant MAX_SCORE = 5;                    /// Maximum score (feedback) allowed
     int public constant MIN_SCORE = -5;                   /// Minimum score (feedback) allowed
     uint public constant LECTURE_TOKENS = 5;              /// Amount of tokens that can be claimed is fixed
+    uint public constant REGISTRATION_TOKENS = 10;        /// Amount of (welcome) tokens given (to students) at registration
     
     address public manager;                               /// The owner, deployer and manager of the contract
     mapping (address => bool) public validStudent;        ///
@@ -160,7 +161,7 @@ contract ValuED {
         require(studentStatus[studentNumber].registered == false); // ensures a student cannot registers itself with multiple public keys
         studentStatus[studentNumber].registered = true;
         validStudent[student] = true;
-        studentTokenBalance[student] = 10; // it allocates 10 tokens to the regitered student.
+        studentTokenBalance[student] = REGISTRATION_TOKENS;
     }
     
     /**
