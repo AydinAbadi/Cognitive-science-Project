@@ -57,7 +57,7 @@ contract ValuED {
         address creator; ///
         string email;    /// this is needed because the student that makes an offer may want to send token. 
                          /// in this case, the student who is interested can email and send to it, its public key. Then, the student who 
-                         /// has made the offer can call sendToken() and uses the other student's address as the recipient. 
+                         /// has made the offer can call sendTokens() and uses the other student's address as the recipient. 
         string reason;   ///
         uint id;         ///
         bool active;     ///
@@ -68,10 +68,10 @@ contract ValuED {
      */
     struct Transaction{
         address sender;       ///
-        address reciever;     ///
+        address receiver;     ///
         string reason;        ///
         int senderFeedback;   /// feedback provided by the sender to tokens.
-        int receiverFeedback; /// feedback provided by  the reciever of tokens.
+        int receiverFeedback; /// feedback provided by  the receiver of tokens.
         uint id;              ///
         uint tokens;          /// number of tokens sent in this transaction.
         string creationTime;  ///
@@ -215,7 +215,7 @@ contract ValuED {
     /**
      * In the UI, each student should be able to see a list of active offers
      * he/she has made. This allows the student to fetch specific offer ID
-     * used in sendToken.
+     * used in sendTokens.
      * This function allows a student to post an offer on the UI. It can offer
      * to engage in an actitivy and specify how many tokens it is willing to
      * send or recieve.
@@ -248,14 +248,14 @@ contract ValuED {
     /**
      * Send a token related to a proposal.
      * 
-     * @param amount the amount of tokens to send
+     * @param tokens the amount of tokens to send
      * @param receiver the address to send tokens to
      * @param reason the description for the transaction
      * @param time the time for the transaction
      * @param proposalID the proposal ID that contains the (active) offer
      */
-    function sendToken(
-        uint amount,
+    function sendTokens(
+        uint tokens,
         address receiver,
         string calldata reason,
         string calldata time,
@@ -266,23 +266,28 @@ contract ValuED {
         require(msg.sender != receiver); // the sender should not be able to send token to itself and make a transaction. 
         require(validStudent[msg.sender] == true, "Not a valid sender");
         require(validStudent[receiver] == true, "Not a valid recipient"); // checks if the recipient is a valid student
-        require(studentTokenBalance[msg.sender] >= amount,"Not enough token");  // check if the sender has enough token.
+        require(studentTokenBalance[msg.sender] >= tokens, "Not enough tokens");  // check if the sender has enough token.
         require(proposals[proposalID].active == true, "Not an active offer");//check of the offer is active yet.
-        require(amount > 0);
-        //either the token recipient or the token sender should be in the creator of the offer_ID.
+        require(tokens > 0);
+        
+        // Either the token recipient or the token sender should be in the creator of the offer_ID.
         require(msg.sender == proposals[proposalID].creator || receiver == proposals[proposalID].creator);
-        proposals[proposalID].active = false;// recall only active offers should be desplayed on the UI.
-        studentTokenBalance[msg.sender] -= amount;
-        studentTokenBalance[receiver] += amount;
-        tradedTokens[msg.sender] += amount; 
-        tradedTokens[receiver] += amount;
+        
+        // Create the transaction for sending tokens
         Transaction memory transaction;
+        
+        // Only active offers should be desplayed on the UI.
+        proposals[proposalID].active = false;
+        studentTokenBalance[msg.sender] -= tokens;
+        studentTokenBalance[receiver] += tokens;
+        tradedTokens[msg.sender] += tokens; 
+        tradedTokens[receiver] += tokens;
         // stores each transaction's details in "transactions".
-        transactionsCount += 1;
+        transactionsCount++;
         transaction.sender = msg.sender;
-        transaction.reciever = receiver;
+        transaction.receiver = receiver;
         transaction.reason = reason;
-        transaction.tokens = amount; 
+        transaction.tokens = tokens; 
         transaction.creationTime = time;
         transaction.id = transactionsCount;
         transaction.senderFeedback = NO_FEEDBACK;
@@ -305,7 +310,7 @@ contract ValuED {
 //         require(res == 1 || res == 2); // TODO future?
         if (res == 1) {
             transactions[transactionID].senderFeedback = score; 
-            reputations[transactions[transactionID].reciever] += score;
+            reputations[transactions[transactionID].receiver] += score;
         } else if (res == 2) {
             transactions[transactionID].receiverFeedback = score; 
             reputations[transactions[transactionID].sender] += score;
@@ -336,7 +341,7 @@ contract ValuED {
             res = 1;
             can = true;
         } else if (
-            transactions[transactionID].reciever == sender
+            transactions[transactionID].receiver == sender
             && transactions[transactionID].receiverFeedback == NO_FEEDBACK
         ) {
             res = 2;
