@@ -155,22 +155,22 @@ contract ValuED {
     /**
      * 
      * 
-     * @param lecture_number the lecture number
+     * @param lectureNumber the lecture number
      * @param lecture the string identifying the lecture
      */
-    function registerLecture(uint lecture_number, string calldata lecture) external onlyAdmin{
+    function registerLecture(uint lectureNumber, string calldata lecture) external onlyAdmin{
         
-        hashLectureID[lecture_number] = bytes2(keccak256(bytes(lecture)));// a hash value of the lecture is stored in the contract. 
+        hashLectureID[lectureNumber] = bytes2(keccak256(bytes(lecture)));// a hash value of the lecture is stored in the contract. 
     }
     
     /**
      * Set the current lecture/course number.
      * 
-     * @param num the lecture number
+     * @param lectureNumber the lecture number
      */
-    function setCurrentLectureNumber(uint num) external onlyAdmin{
+   function setCurrentLectureNumber(uint lectureNumber) external onlyAdmin{
        
-       currentLectureNumber = num;
+       currentLectureNumber = lectureNumber;
    } 
    
     /**
