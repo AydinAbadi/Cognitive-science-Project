@@ -30,7 +30,7 @@ contract ValuED {
      * The status of students determines its registered status.
      */
     struct StudentStatus {
-        bool valid;         /// If the status of a student is valid
+        bool enrolled;      /// If the student is enrolled
         bool tokenAssigned; /// It the student has been assigned tokens already
     }
     
@@ -64,15 +64,16 @@ contract ValuED {
     }
     
     /**
+     * Contract constructor.
+     * The deployer (owner) will be administrator too.
      * 
-     * 
-     * @param address
+     * @param admin administrator to add (apart from the owner)
      */
     constructor(address admin) public{
         
         owner = msg.sender;
         validAdmin[admin] = true;
-        validAdmin[msg.sender] = true; // so the deployer can be admin too.
+        validAdmin[msg.sender] = true;
     }
     
     /**
@@ -96,7 +97,7 @@ contract ValuED {
     /**
      * 
      * 
-     * @param admin
+     * @param admin administrator to add
      */
     function addAdmin(address admin) external onlyOwner{
         
@@ -106,7 +107,7 @@ contract ValuED {
     /**
      * 
      * 
-     * @param admin
+     * @param admin administrator to delete
      */
     function delAdmin(address admin) external onlyOwner{
         
@@ -116,8 +117,8 @@ contract ValuED {
     /**
      * Allows a valid admin to send some tokens to students.
      * 
-     * @param student
-     * @param tokens
+     * @param student student whose balance will be increased
+     * @param tokens tokens given to the student
      */
     function distributeToken(address student, uint tokens) external onlyAdmin{
         
@@ -126,26 +127,27 @@ contract ValuED {
     }
     
     /**
+     * This function is called when a list of students enrolled for the course
+     * is finalised.
      * 
-     * 
-     * @param std_num
+     * @param studentNumber student number
      */
-    function register_std_num(uint std_num) external onlyAdmin{ // this is done when a list of students enroled for the course is finalised. 
+    function enrollStudent(uint studentNumber) external onlyAdmin{
         
-        studentStatus[std_num].valid = true;
+        studentStatus[studentNumber].enrolled = true;
     }
 
     /**
      * 
      * 
-     * @param student
-     * @param std_num
+     * @param student student to register
+     * @param studentNumber student number assigned for current registration
      */
-    function register_student(address student, uint std_num) external onlyAdmin{
+    function registerStudent(address student, uint studentNumber) external onlyAdmin{
         
-        require(studentStatus[std_num].valid == true); // check if the student has enrolled the course
-        require(studentStatus[std_num].tokenAssigned == false); // ensures a student cannot registers itself with multiple public keys
-        studentStatus[std_num].tokenAssigned = true;
+        require(studentStatus[studentNumber].enrolled == true); // check if the student has enrolled the course
+        require(studentStatus[studentNumber].tokenAssigned == false); // ensures a student cannot registers itself with multiple public keys
+        studentStatus[studentNumber].tokenAssigned = true;
          validStudent[student] = true;
          studentTokenBalance[student] = 10; // it allocates 10 tokens to the regitered student.
     }
@@ -153,8 +155,8 @@ contract ValuED {
     /**
      * 
      * 
-     * @param lecture_number
-     * @param lecture
+     * @param lecture_number the lecture number
+     * @param lecture the string identifying the lecture
      */
     function registerLecture(uint lecture_number, string calldata lecture) external onlyAdmin{
         
@@ -162,11 +164,11 @@ contract ValuED {
     }
     
     /**
+     * Set the current lecture/course number.
      * 
-     * 
-     * @param num
+     * @param num the lecture number
      */
-   function setCurrentLectureNumber(uint num) external onlyAdmin{
+    function setCurrentLectureNumber(uint num) external onlyAdmin{
        
        currentLectureNumber = num;
    } 
@@ -177,12 +179,12 @@ contract ValuED {
      * (e.g. by uploading a QR code in the UI). If approved (in the UI), then
      * the UI calls this function.
      * 
-     * @param input_
+     * @param lecture the lecture (ID string) related with the token claim
      */
-    function claimToken(string calldata input_) external{
+    function claimToken(string calldata lecture) external{
         
         require(validStudent[msg.sender] == true);// checks if it's a valid student
-        require(hashLectureID[currentLectureNumber] == bytes2(keccak256(bytes(input_))));//checks if the student has sent a valid id 
+        require(hashLectureID[currentLectureNumber] == bytes2(keccak256(bytes(lecture))));//checks if the student has sent a valid id 
         require(attended[msg.sender] != currentLectureNumber);// ensures the student has not already claimed any tokens for this lecture yet.
         attended[msg.sender] = currentLectureNumber;
         studentTokenBalance[msg.sender] += LECTURE_TOKENS;
@@ -197,9 +199,10 @@ contract ValuED {
      * to engage in an actitivy and specify how many tokens it is willing to
      * send or recieve.
      * 
-     * @param tokens
-     * @param reason
-     * @param email
+     * @param tokens the price of the proposal
+     * @param reason the reason describing the proposal
+     * @param email email that can be to send tokens later if public keys are
+     * known
      */
     function makeProposal(uint tokens, string calldata reason, string calldata email) external{
         
@@ -219,11 +222,11 @@ contract ValuED {
     /**
      * 
      * 
-     * @param amount
-     * @param receiver
-     * @param reason
-     * @param time
-     * @param proposalID
+     * @param amount the amount of tokens to send
+     * @param receiver the address to send tokens to
+     * @param reason the description for the transaction
+     * @param time the time for the transaction
+     * @param proposalID the proposal ID that contains the (active) offer
      */
     function sendToken(uint amount, address receiver, string calldata reason,string calldata time, uint proposalID) external{
         
@@ -257,8 +260,8 @@ contract ValuED {
     /**
      * 
      * 
-     * @param sender
-     * @param transactionID
+     * @param sender the sender of the feedback
+     * @param transactionID the transaction ID of reference
      * 
      * @return (can, res)
      */
@@ -281,8 +284,8 @@ contract ValuED {
      * transactions and see which transaction it wants to leave feedback, then
      * it needs to read the transaction ID.
      * 
-     * @param transactionID
-     * @param score
+     * @param transactionID the transaction ID of reference
+     * @param score the feedback to leave
      */
     function leaveFeedback(uint transactionID, int score) external{
        
