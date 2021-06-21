@@ -7,6 +7,7 @@ pragma solidity ^0.5.0;
  */
 contract ValuED {
     address public owner;                                 ///
+    int public constant NO_FEEDBACK = -10;                /// value outside range to provide
     int public constant MAX_SCORE = 5;                    ///
     int public constant MIN_SCORE = -5;                   ///
     uint public constant LECTURE_TOKENS = 5;              /// it keeps a fixed number of tokens.
@@ -26,7 +27,8 @@ contract ValuED {
     mapping (uint => uint) public lectureParticipants;    /// (uint lecture_number => uint number_of_students_claimed_tokens) lectureParticipants--  It stores  total number of students participated in a session/lecture
     
     /**
-     * The status of students determines its registered status.
+     * The status of students determines their registered status in the
+     * current lecture.
      */
     struct StudentStatus {
         bool enrolled;      /// If the student is enrolled
@@ -34,7 +36,8 @@ contract ValuED {
     }
     
     /**
-     * 
+     * Valid users can propose any trades they wish and submit their proposal
+     * that has the following structure. 
      */
     struct Proposal {
         uint tokens;     ///
@@ -261,8 +264,8 @@ contract ValuED {
         transaction.tokens = amount; 
         transaction.creationTime = time;
         transaction.id = transactionsCount;
-        transaction.senderFeedback = -10; // we allocate -10 to show no feedback has been provided. Note that 0 is among valid scores and it's also a default value for uint types. 
-        transaction.receiverFeedback = -10; // see above
+        transaction.senderFeedback = NO_FEEDBACK;
+        transaction.receiverFeedback = NO_FEEDBACK;
         transactions[transactionsCount] = transaction;
     }
     
@@ -305,12 +308,12 @@ contract ValuED {
         returns (bool can, uint res)
     { 
         // checks if the person who wants to leave the feedback is sender of tokens AND has not left any feedback for the transaction.
-        if(transactions[transactionID].sender == sender && transactions[transactionID].senderFeedback == -10){
+        if(transactions[transactionID].sender == sender && transactions[transactionID].senderFeedback == NO_FEEDBACK){
             res = 1;
             can = true;
         }
         // checks if the person who wants to leave the feedback is reciever of tokens AND has not left any feedback for the transaction.
-        else if(transactions[transactionID].reciever == sender && transactions[transactionID].receiverFeedback == -10){
+        else if(transactions[transactionID].reciever == sender && transactions[transactionID].receiverFeedback == NO_FEEDBACK){
             res = 2;
             can = true;
         }
