@@ -40,5 +40,5 @@ Smart contract stores:
 
 ## Run with docker
 
-docker run -v "`pwd`":/mnt ethereum/solc:0.5.0 mnt/smart-contract.sol
+docker run -v "`pwd`":/mnt ethereum/solc:0.5.0 mnt/ValuED.sol
 
