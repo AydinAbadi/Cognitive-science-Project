@@ -6,7 +6,6 @@ pragma solidity ^0.5.0;
  * @title ValuED contract - for cognitive science project
  */
 contract ValuED {
-    
     address public owner;                                 ///
     int public constant MAX_SCORE = 5;                    ///
     int public constant MIN_SCORE = -5;                   ///
@@ -52,7 +51,6 @@ contract ValuED {
      * 
      */
     struct Transaction{
-        
         address sender;       ///
         address reciever;     ///
         string reason;        ///
@@ -70,7 +68,6 @@ contract ValuED {
      * @param admin administrator to add (apart from the owner)
      */
     constructor(address admin) public{
-        
         owner = msg.sender;
         validAdmin[admin] = true;
         validAdmin[msg.sender] = true;
@@ -80,7 +77,6 @@ contract ValuED {
      * 
      */
     modifier onlyAdmin(){
-        
         require(validAdmin[msg.sender] == true);
         _;
     }
@@ -89,7 +85,6 @@ contract ValuED {
      * 
      */
     modifier onlyOwner(){
-        
         require(msg.sender == owner);
         _;
     }
@@ -100,7 +95,6 @@ contract ValuED {
      * @param admin administrator to add
      */
     function addAdmin(address admin) external onlyOwner{
-        
         validAdmin[admin] = true;
     }
     
@@ -110,7 +104,6 @@ contract ValuED {
      * @param admin administrator to delete
      */
     function delAdmin(address admin) external onlyOwner{
-        
         validAdmin[admin] = false;
     }
     
@@ -121,7 +114,6 @@ contract ValuED {
      * @param tokens tokens given to the student
      */
     function distributeToken(address student, uint tokens) external onlyAdmin{
-        
         require(validStudent[student] == true);
         studentTokenBalance[student] += tokens;
     }
@@ -133,7 +125,6 @@ contract ValuED {
      * @param studentNumber student number
      */
     function enrollStudent(uint studentNumber) external onlyAdmin{
-        
         studentStatus[studentNumber].enrolled = true;
     }
 
@@ -144,12 +135,11 @@ contract ValuED {
      * @param studentNumber student number assigned for current registration
      */
     function registerStudent(address student, uint studentNumber) external onlyAdmin{
-        
         require(studentStatus[studentNumber].enrolled == true); // check if the student has enrolled the course
         require(studentStatus[studentNumber].tokenAssigned == false); // ensures a student cannot registers itself with multiple public keys
         studentStatus[studentNumber].tokenAssigned = true;
-         validStudent[student] = true;
-         studentTokenBalance[student] = 10; // it allocates 10 tokens to the regitered student.
+        validStudent[student] = true;
+        studentTokenBalance[student] = 10; // it allocates 10 tokens to the regitered student.
     }
     
     /**
@@ -159,7 +149,6 @@ contract ValuED {
      * @param lecture the string identifying the lecture
      */
     function registerLecture(uint lectureNumber, string calldata lecture) external onlyAdmin{
-        
         hashLectureID[lectureNumber] = bytes2(keccak256(bytes(lecture)));// a hash value of the lecture is stored in the contract. 
     }
     
@@ -168,10 +157,9 @@ contract ValuED {
      * 
      * @param lectureNumber the lecture number
      */
-   function setCurrentLectureNumber(uint lectureNumber) external onlyAdmin{
-       
-       currentLectureNumber = lectureNumber;
-   } 
+    function setCurrentLectureNumber(uint lectureNumber) external onlyAdmin{
+        currentLectureNumber = lectureNumber;
+    } 
    
     /**
      * This function allows a student to claim a fixed number of tokens
@@ -182,7 +170,6 @@ contract ValuED {
      * @param lecture the lecture (ID string) related with the token claim
      */
     function claimToken(string calldata lecture) external{
-        
         require(validStudent[msg.sender] == true);// checks if it's a valid student
         require(hashLectureID[currentLectureNumber] == bytes2(keccak256(bytes(lecture))));//checks if the student has sent a valid id 
         require(attended[msg.sender] != currentLectureNumber);// ensures the student has not already claimed any tokens for this lecture yet.
@@ -205,7 +192,6 @@ contract ValuED {
      * known
      */
     function makeProposal(uint tokens, string calldata reason, string calldata email) external{
-        
         require(validStudent[msg.sender] == true, "Not a valid sender");
         require(studentTokenBalance[msg.sender] >= tokens,"Not enough token");
         Proposal memory proposal;
@@ -229,7 +215,6 @@ contract ValuED {
      * @param proposalID the proposal ID that contains the (active) offer
      */
     function sendToken(uint amount, address receiver, string calldata reason,string calldata time, uint proposalID) external{
-        
         require(msg.sender!=receiver); // the sender should not be able to send token to itself and make a transaction. 
         require(validStudent[msg.sender] == true, "Not a valid sender"); // checks if the sender is a valid student
         require(validStudent[receiver] == true, "Not a valid recipient"); // checks if the recipient is a valid student
@@ -266,7 +251,6 @@ contract ValuED {
      * @return (can, res)
      */
     function canLeaveFeedback(address sender, uint transactionID) internal returns (bool can, uint res){ 
-        
         // checks if the person who wants to leave the feedback is sender of tokens AND has not left any feedback for the transaction.
         if(transactions[transactionID].sender == sender && transactions[transactionID].senderFeedback == -10){
             res = 1;
@@ -288,7 +272,6 @@ contract ValuED {
      * @param score the feedback to leave
      */
     function leaveFeedback(uint transactionID, int score) external{
-       
         require (MIN_SCORE <= score && score <= MAX_SCORE);  // check if the score is valid: MIN_SCORE <= score <= MAX_SCORE
         (bool can, uint res) = canLeaveFeedback(msg.sender, transactionID); // check if the the sender of the feedback is one of the parties involded in the transaction and has not already left any feedback yet. 
         require(can);
