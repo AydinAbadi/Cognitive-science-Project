@@ -7,53 +7,67 @@ pragma solidity ^0.5.0;
  */
 contract ValuED {
     
-    address public owner;
-    int public constant MAX_SCORE = 5;
-    int public constant MIN_SCORE = -5;
-    uint public constant LECTURE_TOKENS = 5; // it keeps a fixed number of tokens.
-    uint public transactionsCount; // it's used as transaction's ID too.
-    uint public proposalsCount;
-    uint public currentLectureNumber;
-    mapping (uint => StudentStatus) public studentStatus; 
-    mapping (uint => Proposal) public proposals;
-    mapping (address => bool) public validStudent;
-    mapping (address => bool) public validAdmin;
-    mapping (address => uint) public studentTokenBalance;
-    mapping (address => uint) public tradedTokens; // keeps track of total tokens sent/recived by each student.
-    mapping (address  => int) public reputations; // mapping (address reciver  => int score) 
-    mapping (uint => Transaction) public transactions; // mapping (uint transaction id/counter => Transaction)
-    mapping (uint => bytes2) public hashLectureID; // lecture number => hash(lecture ID).
-    mapping (address => uint) public attended; 
-    mapping (uint => uint) public lectureParticipants;// (uint lecture_number => uint number_of_students_claimed_tokens) lectureParticipants--  It stores  total number of students participated in a session/lecture
+    address public owner;                                 ///
+    int public constant MAX_SCORE = 5;                    ///
+    int public constant MIN_SCORE = -5;                   ///
+    uint public constant LECTURE_TOKENS = 5;              /// it keeps a fixed number of tokens.
+    uint public transactionsCount;                        /// it's used as transaction's ID too.
+    uint public proposalsCount;                           ///
+    uint public currentLectureNumber;                     ///
+    mapping (uint => StudentStatus) public studentStatus; ///
+    mapping (uint => Proposal) public proposals;          ///
+    mapping (address => bool) public validStudent;        ///
+    mapping (address => bool) public validAdmin;          ///
+    mapping (address => uint) public studentTokenBalance; ///
+    mapping (address => uint) public tradedTokens;        /// keeps track of total tokens sent/recived by each student.
+    mapping (address  => int) public reputations;         /// mapping (address reciver  => int score) 
+    mapping (uint => Transaction) public transactions;    /// mapping (uint transaction id/counter => Transaction)
+    mapping (uint => bytes2) public hashLectureID;        /// lecture number => hash(lecture ID).
+    mapping (address => uint) public attended;            ///
+    mapping (uint => uint) public lectureParticipants;    /// (uint lecture_number => uint number_of_students_claimed_tokens) lectureParticipants--  It stores  total number of students participated in a session/lecture
     
+    /**
+     * 
+     */
     struct StudentStatus {
-        bool valid;
-        bool tokenAssigned;
+        bool valid;         /// 
+        bool tokenAssigned; /// 
     }
     
+    /**
+     * 
+     */
     struct Proposal {
-        uint tokens;
-        address creator;
-        string email;// this is needed because the student that makes an offer may want to send token. 
-        // in this case, the student who is interested can email and send to it, its public key. Then, the student who 
-        // has made the offer can call sendToken() and uses the other student's address as the recipient. 
-        string reason;
-        uint id;
-        bool active;
+        uint tokens;     ///
+        address creator; ///
+        string email;    /// this is needed because the student that makes an offer may want to send token. 
+                         /// in this case, the student who is interested can email and send to it, its public key. Then, the student who 
+                         /// has made the offer can call sendToken() and uses the other student's address as the recipient. 
+        string reason;   ///
+        uint id;         ///
+        bool active;     ///
     }
 
+    /**
+     * 
+     */
     struct Transaction{
         
-        address sender;
-        address reciever;
-        string reason; 
-        int senderFeedback; // feedback provided by the sender to tokens.
-        int receiverFeedback; // feedback provided by  the reciever of tokens.
-        uint id;
-        uint tokens; // number of tokens sent in this transaction.
-        string creationTime;
+        address sender;       ///
+        address reciever;     ///
+        string reason;        ///
+        int senderFeedback;   /// feedback provided by the sender to tokens.
+        int receiverFeedback; /// feedback provided by  the reciever of tokens.
+        uint id;              ///
+        uint tokens;          /// number of tokens sent in this transaction.
+        string creationTime;  ///
     }
     
+    /**
+     * 
+     * 
+     * @param address
+     */
     constructor(address admin) public{
         
         owner = msg.sender;
@@ -61,40 +75,72 @@ contract ValuED {
         validAdmin[msg.sender] = true; // so the deployer can be admin too.
     }
     
+    /**
+     * 
+     */
     modifier onlyAdmin(){
         
         require(validAdmin[msg.sender] == true);
         _;
     }
     
+    /**
+     * 
+     */
     modifier onlyOwner(){
         
         require(msg.sender == owner);
         _;
     }
     
+    /**
+     * 
+     * 
+     * @param admin
+     */
     function addAdmin(address admin) external onlyOwner{
         
         validAdmin[admin] = true;
     }
     
+    /**
+     * 
+     * 
+     * @param admin
+     */
     function delAdmin(address admin) external onlyOwner{
         
         validAdmin[admin] = false;
     }
     
-    // Allows a valid admin to send some tokens to students.
+    /**
+     * Allows a valid admin to send some tokens to students.
+     * 
+     * @param student
+     * @param tokens
+     */
     function distributeToken(address student, uint tokens) external onlyAdmin{
         
         require(validStudent[student] == true);
         studentTokenBalance[student] += tokens;
     }
     
+    /**
+     * 
+     * 
+     * @param std_num
+     */
     function register_std_num(uint std_num) external onlyAdmin{ // this is done when a list of students enroled for the course is finalised. 
         
         studentStatus[std_num].valid = true;
     }
 
+    /**
+     * 
+     * 
+     * @param student
+     * @param std_num
+     */
     function register_student(address student, uint std_num) external onlyAdmin{
         
         require(studentStatus[std_num].valid == true); // check if the student has enrolled the course
@@ -104,17 +150,35 @@ contract ValuED {
          studentTokenBalance[student] = 10; // it allocates 10 tokens to the regitered student.
     }
     
+    /**
+     * 
+     * 
+     * @param lecture_number
+     * @param lecture
+     */
     function registerLecture(uint lecture_number, string calldata lecture) external onlyAdmin{
         
         hashLectureID[lecture_number] = bytes2(keccak256(bytes(lecture)));// a hash value of the lecture is stored in the contract. 
     }
     
+    /**
+     * 
+     * 
+     * @param num
+     */
    function setCurrentLectureNumber(uint num) external onlyAdmin{
        
        currentLectureNumber = num;
    } 
-     // This function allows a student to claim a fixed number of tokens (LECTURE_TOKENS), if it could prove its attentance in a lecture  (e.g. by uploading a QR code in the UI). If approved 
-    // (in the UI) then UI calls this function. 
+   
+    /**
+     * This function allows a student to claim a fixed number of tokens
+     * (LECTURE_TOKENS), if it could prove its attentance in a lecture
+     * (e.g. by uploading a QR code in the UI). If approved (in the UI), then
+     * the UI calls this function.
+     * 
+     * @param input_
+     */
     function claimToken(string calldata input_) external{
         
         require(validStudent[msg.sender] == true);// checks if it's a valid student
@@ -125,9 +189,18 @@ contract ValuED {
         lectureParticipants[currentLectureNumber]++;
     }
     
-    // in the UI, each student should be able to see a list of active offers he/she has made. This allows the student
-    // to fetch specific offer ID used in sendToken. //  
-    // This function allows a student to post an offer on the UI. It can offer to engage in an actitivy and specify how many tokens it is willing to send or recieve.
+    /**
+     * In the UI, each student should be able to see a list of active offers
+     * he/she has made. This allows the student to fetch specific offer ID
+     * used in sendToken.
+     * This function allows a student to post an offer on the UI. It can offer
+     * to engage in an actitivy and specify how many tokens it is willing to
+     * send or recieve.
+     * 
+     * @param tokens
+     * @param reason
+     * @param email
+     */
     function makeProposal(uint tokens, string calldata reason, string calldata email) external{
         
         require(validStudent[msg.sender] == true, "Not a valid sender");
@@ -143,6 +216,15 @@ contract ValuED {
         proposals[proposalsCount] = proposal;
     }
     
+    /**
+     * 
+     * 
+     * @param amount
+     * @param receiver
+     * @param reason
+     * @param time
+     * @param proposalID
+     */
     function sendToken(uint amount, address receiver, string calldata reason,string calldata time, uint proposalID) external{
         
         require(msg.sender!=receiver); // the sender should not be able to send token to itself and make a transaction. 
@@ -172,6 +254,14 @@ contract ValuED {
         transactions[transactionsCount] = transaction;
     }
     
+    /**
+     * 
+     * 
+     * @param sender
+     * @param transactionID
+     * 
+     * @return (can, res)
+     */
     function canLeaveFeedback(address sender, uint transactionID) internal returns (bool can, uint res){ 
         
         // checks if the person who wants to leave the feedback is sender of tokens AND has not left any feedback for the transaction.
@@ -185,8 +275,15 @@ contract ValuED {
             can = true;
         }
     }
-    // the sender of the feedback needs to first check the list of the transactions and see which transaction it wants to leave feedback 
-    // then it needs to read the transaction ID. 
+    
+    /**
+     * The sender of the feedback needs to first check the list of the
+     * transactions and see which transaction it wants to leave feedback, then
+     * it needs to read the transaction ID.
+     * 
+     * @param transactionID
+     * @param score
+     */
     function leaveFeedback(uint transactionID, int score) external{
        
         require (MIN_SCORE <= score && score <= MAX_SCORE);  // check if the score is valid: MIN_SCORE <= score <= MAX_SCORE
