@@ -27,11 +27,11 @@ contract ValuED {
     mapping (uint => uint) public lectureParticipants;    /// (uint lecture_number => uint number_of_students_claimed_tokens) lectureParticipants--  It stores  total number of students participated in a session/lecture
     
     /**
-     * 
+     * The status of students determines its registered status.
      */
     struct StudentStatus {
-        bool valid;         /// 
-        bool tokenAssigned; /// 
+        bool valid;         /// If the status of a student is valid
+        bool tokenAssigned; /// It the student has been assigned tokens already
     }
     
     /**
