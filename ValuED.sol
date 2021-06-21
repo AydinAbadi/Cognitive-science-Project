@@ -6,7 +6,7 @@ pragma solidity ^0.5.0;
  * @title ValuED contract - for cognitive science project
  */
 contract ValuED {
-    address public owner;                                 ///
+    address public manager;                                 ///
     int public constant NO_FEEDBACK = -10;                /// value outside range to provide
     int public constant MAX_SCORE = 5;                    ///
     int public constant MIN_SCORE = -5;                   ///
@@ -66,12 +66,12 @@ contract ValuED {
     
     /**
      * Contract constructor.
-     * The deployer (owner) will be administrator too.
+     * The deployer (manager) will be administrator too.
      * 
-     * @param admin administrator to add (apart from the owner)
+     * @param admin administrator to add (apart from the manager)
      */
     constructor(address admin) public {
-        owner = msg.sender;
+        manager = msg.sender;
         validAdmin[admin] = true;
         validAdmin[msg.sender] = true;
     }
@@ -87,8 +87,8 @@ contract ValuED {
     /**
      * 
      */
-    modifier onlyOwner() {
-        require(msg.sender == owner);
+    modifier onlyManager() {
+        require(msg.sender == manager);
         _;
     }
     
@@ -97,7 +97,7 @@ contract ValuED {
      * 
      * @param admin administrator to add
      */
-    function addAdmin(address admin) external onlyOwner {
+    function addAdmin(address admin) external onlyManager {
         validAdmin[admin] = true;
     }
     
@@ -106,7 +106,7 @@ contract ValuED {
      * 
      * @param admin administrator to delete
      */
-    function delAdmin(address admin) external onlyOwner {
+    function delAdmin(address admin) external onlyManager {
         validAdmin[admin] = false;
     }
     
