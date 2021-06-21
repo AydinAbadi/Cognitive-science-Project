@@ -6,7 +6,7 @@ pragma solidity ^0.5.0;
  * @title ValuED contract - for cognitive science project
  */
 contract ValuED {
-    address public manager;                                 ///
+    address public manager;                               ///
     int public constant NO_FEEDBACK = -10;                /// value outside range to provide
     int public constant MAX_SCORE = 5;                    ///
     int public constant MIN_SCORE = -5;                   ///
@@ -31,8 +31,8 @@ contract ValuED {
      * current lecture.
      */
     struct StudentStatus {
-        bool enrolled;      /// If the student is enrolled
-        bool tokenAssigned; /// It the student has been assigned tokens already
+        bool enrolled;   /// If the student is enrolled
+        bool registered; /// It the student has been assigned tokens already
     }
     
     /**
@@ -77,7 +77,7 @@ contract ValuED {
     }
     
     /**
-     * 
+     * Only an admin will be allowed.
      */
     modifier onlyAdmin() {
         require(validAdmin[msg.sender] == true);
@@ -85,7 +85,7 @@ contract ValuED {
     }
     
     /**
-     * 
+     * Only the manager will be allowed.
      */
     modifier onlyManager() {
         require(msg.sender == manager);
@@ -93,7 +93,7 @@ contract ValuED {
     }
     
     /**
-     * 
+     * Add an administrator.
      * 
      * @param admin administrator to add
      */
@@ -102,7 +102,7 @@ contract ValuED {
     }
     
     /**
-     * 
+     * Delete an administrator.
      * 
      * @param admin administrator to delete
      */
@@ -132,7 +132,8 @@ contract ValuED {
     }
 
     /**
-     * 
+     * Binds a (invalid) student to a student number that has been previously
+     * enrolled and was not registered before.
      * 
      * @param student student to register
      * @param studentNumber student number assigned for current registration
@@ -144,14 +145,14 @@ contract ValuED {
         external onlyAdmin
     {
         require(studentStatus[studentNumber].enrolled == true); // check if the student has enrolled the course
-        require(studentStatus[studentNumber].tokenAssigned == false); // ensures a student cannot registers itself with multiple public keys
-        studentStatus[studentNumber].tokenAssigned = true;
+        require(studentStatus[studentNumber].registered == false); // ensures a student cannot registers itself with multiple public keys
+        studentStatus[studentNumber].registered = true;
         validStudent[student] = true;
         studentTokenBalance[student] = 10; // it allocates 10 tokens to the regitered student.
     }
     
     /**
-     * 
+     * Register a lecture identified by a string to the given lecture number.
      * 
      * @param lectureNumber the lecture number
      * @param lecture the string identifying the lecture
@@ -225,7 +226,7 @@ contract ValuED {
     }
     
     /**
-     * 
+     * Send a token related to a proposal.
      * 
      * @param amount the amount of tokens to send
      * @param receiver the address to send tokens to
@@ -292,7 +293,8 @@ contract ValuED {
     }
     
     /**
-     * 
+     * This function tells whether a participant of a transaction can leave
+     * a feedback (to the other participant).
      * 
      * @param sender the sender of the feedback
      * @param transactionID the transaction ID of reference
