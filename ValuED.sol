@@ -6,24 +6,28 @@ pragma solidity ^0.5.0;
  * @title ValuED contract - for cognitive science project
  */
 contract ValuED {
-    address public manager;                               ///
-    int public constant NO_FEEDBACK = -10;                /// value outside range to provide
-    int public constant MAX_SCORE = 5;                    ///
-    int public constant MIN_SCORE = -5;                   ///
-    uint public constant LECTURE_TOKENS = 5;              /// it keeps a fixed number of tokens.
-    uint public transactionsCount;                        /// it's used as transaction's ID too.
-    uint public proposalsCount;                           ///
-    uint public currentLectureNumber;                     ///
-    mapping (uint => StudentStatus) public studentStatus; ///
-    mapping (uint => Proposal) public proposals;          ///
+    int public constant NO_FEEDBACK = -10;                /// Constant outside range to signify no feedback provided
+    int public constant MAX_SCORE = 5;                    /// Maximum score (feedback) allowed
+    int public constant MIN_SCORE = -5;                   /// Minimum score (feedback) allowed
+    uint public constant LECTURE_TOKENS = 5;              /// Amount of tokens that can be claimed is fixed
+    
+    address public manager;                               /// The owner, deployer and manager of the contract
     mapping (address => bool) public validStudent;        ///
     mapping (address => bool) public validAdmin;          ///
+    uint public currentLectureNumber;                     /// Current lecture number
+    
+    uint public proposalsCount;                           /// Last proposal ID
+    mapping (uint => Proposal) public proposals;          /// Proposals
+    
+    uint public transactionsCount;                        /// Last transaction ID
+    mapping (uint => Transaction) public transactions;    /// mapping (uint transaction id/counter => Transaction)
+    
+    mapping (uint => StudentStatus) public studentStatus; /// Index: student numbers
     mapping (address => uint) public studentTokenBalance; ///
     mapping (address => uint) public tradedTokens;        /// keeps track of total tokens sent/recived by each student.
     mapping (address  => int) public reputations;         /// mapping (address reciver  => int score) 
-    mapping (uint => Transaction) public transactions;    /// mapping (uint transaction id/counter => Transaction)
     mapping (uint => bytes2) public hashLectureID;        /// lecture number => hash(lecture ID).
-    mapping (address => uint) public attended;            ///
+    mapping (address => (uint => bool)) public claimed;     /// 
     mapping (uint => uint) public lectureParticipants;    /// (uint lecture_number => uint number_of_students_claimed_tokens) lectureParticipants--  It stores  total number of students participated in a session/lecture
     
     /**
@@ -36,11 +40,19 @@ contract ValuED {
     }
     
     /**
+     * The status of what student claimed relating to what lecture.
+     */
+    struct ClaimedStatus {
+        address student;    /// Student that claimed tokens for a lecture
+        uint lectureNumber; /// Lecture number of reference
+    }
+    
+    /**
      * Valid users can propose any trades they wish and submit their proposal
      * that has the following structure. 
      */
     struct Proposal {
-        uint tokens;     ///
+        uint tokens;     /// Tokens
         address creator; ///
         string email;    /// this is needed because the student that makes an offer may want to send token. 
                          /// in this case, the student who is interested can email and send to it, its public key. Then, the student who 
@@ -163,7 +175,7 @@ contract ValuED {
     )
         external onlyAdmin
     {
-        hashLectureID[lectureNumber] = bytes2(keccak256(bytes(lecture)));// a hash value of the lecture is stored in the contract. 
+        hashLectureID[lectureNumber] = bytes2(keccak256(bytes(lecture)));
     }
     
     /**
@@ -184,10 +196,17 @@ contract ValuED {
      * @param lecture the lecture (ID string) related with the token claim
      */
     function claimToken(string calldata lecture) external {
-        require(validStudent[msg.sender] == true);// checks if it's a valid student
-        require(hashLectureID[currentLectureNumber] == bytes2(keccak256(bytes(lecture))));//checks if the student has sent a valid id 
-        require(attended[msg.sender] != currentLectureNumber);// ensures the student has not already claimed any tokens for this lecture yet.
-        attended[msg.sender] = currentLectureNumber;
+        require(validStudent[msg.sender] == true);
+        require(hashLectureID[currentLectureNumber] == bytes2(keccak256(bytes(lecture))));
+        
+        /* 
+         * Ensures the student has not already claimed any tokens for this
+         * lecture yet. -- TODO future?: not enough if current lecture number
+         * is set to a previous one - (admins are currently assumed to behave
+         * honestly).
+         */
+        require(claimed[msg.sender][currentLectureNumber]);
+        claimed[msg.sender][currentLectureNumber] = true;
         studentTokenBalance[msg.sender] += LECTURE_TOKENS;
         lectureParticipants[currentLectureNumber]++;
     }
@@ -243,8 +262,8 @@ contract ValuED {
     )
         external
     {
-        require(msg.sender!=receiver); // the sender should not be able to send token to itself and make a transaction. 
-        require(validStudent[msg.sender] == true, "Not a valid sender"); // checks if the sender is a valid student
+        require(msg.sender != receiver); // the sender should not be able to send token to itself and make a transaction. 
+        require(validStudent[msg.sender] == true, "Not a valid sender");
         require(validStudent[receiver] == true, "Not a valid recipient"); // checks if the recipient is a valid student
         require(studentTokenBalance[msg.sender] >= amount,"Not enough token");  // check if the sender has enough token.
         require(proposals[proposalID].active == true, "Not an active offer");//check of the offer is active yet.
@@ -279,14 +298,14 @@ contract ValuED {
      * @param score the feedback to leave
      */
     function leaveFeedback(uint transactionID, int score) external {
-        require (MIN_SCORE <= score && score <= MAX_SCORE);  // check if the score is valid: MIN_SCORE <= score <= MAX_SCORE
-        (bool can, uint res) = canLeaveFeedback(msg.sender, transactionID); // check if the the sender of the feedback is one of the parties involded in the transaction and has not already left any feedback yet. 
+        require (MIN_SCORE <= score && score <= MAX_SCORE);
+        (bool can, uint res) = canLeaveFeedback(msg.sender, transactionID);
         require(can);
-        if (res == 1){ 
+//         require(res == 1 || res == 2); // TODO future?
+        if (res == 1) {
             transactions[transactionID].senderFeedback = score; 
             reputations[transactions[transactionID].reciever] += score;
-        }
-        else if (res == 2){ 
+        } else if (res == 2) {
             transactions[transactionID].receiverFeedback = score; 
             reputations[transactions[transactionID].sender] += score;
         }
@@ -308,16 +327,22 @@ contract ValuED {
         view
         internal
         returns (bool can, uint res)
-    { 
-        // checks if the person who wants to leave the feedback is sender of tokens AND has not left any feedback for the transaction.
-        if(transactions[transactionID].sender == sender && transactions[transactionID].senderFeedback == NO_FEEDBACK){
+    {
+        if (
+            transactions[transactionID].sender == sender
+            && transactions[transactionID].senderFeedback == NO_FEEDBACK
+        ) {
             res = 1;
             can = true;
-        }
-        // checks if the person who wants to leave the feedback is reciever of tokens AND has not left any feedback for the transaction.
-        else if(transactions[transactionID].reciever == sender && transactions[transactionID].receiverFeedback == NO_FEEDBACK){
+        } else if (
+            transactions[transactionID].reciever == sender
+            && transactions[transactionID].receiverFeedback == NO_FEEDBACK
+        ) {
             res = 2;
             can = true;
+//         } else { // Not required?
+//             res = 0;
+//             can = false;
         }
     }
 }
