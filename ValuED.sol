@@ -67,7 +67,7 @@ contract ValuED {
      * 
      * @param admin administrator to add (apart from the owner)
      */
-    constructor(address admin) public{
+    constructor(address admin) public {
         owner = msg.sender;
         validAdmin[admin] = true;
         validAdmin[msg.sender] = true;
@@ -76,7 +76,7 @@ contract ValuED {
     /**
      * 
      */
-    modifier onlyAdmin(){
+    modifier onlyAdmin() {
         require(validAdmin[msg.sender] == true);
         _;
     }
@@ -84,7 +84,7 @@ contract ValuED {
     /**
      * 
      */
-    modifier onlyOwner(){
+    modifier onlyOwner() {
         require(msg.sender == owner);
         _;
     }
@@ -94,7 +94,7 @@ contract ValuED {
      * 
      * @param admin administrator to add
      */
-    function addAdmin(address admin) external onlyOwner{
+    function addAdmin(address admin) external onlyOwner {
         validAdmin[admin] = true;
     }
     
@@ -103,7 +103,7 @@ contract ValuED {
      * 
      * @param admin administrator to delete
      */
-    function delAdmin(address admin) external onlyOwner{
+    function delAdmin(address admin) external onlyOwner {
         validAdmin[admin] = false;
     }
     
@@ -113,7 +113,7 @@ contract ValuED {
      * @param student student whose balance will be increased
      * @param tokens tokens given to the student
      */
-    function distributeToken(address student, uint tokens) external onlyAdmin{
+    function distributeToken(address student, uint tokens) external onlyAdmin {
         require(validStudent[student] == true);
         studentTokenBalance[student] += tokens;
     }
@@ -124,7 +124,7 @@ contract ValuED {
      * 
      * @param studentNumber student number
      */
-    function enrollStudent(uint studentNumber) external onlyAdmin{
+    function enrollStudent(uint studentNumber) external onlyAdmin {
         studentStatus[studentNumber].enrolled = true;
     }
 
@@ -134,7 +134,12 @@ contract ValuED {
      * @param student student to register
      * @param studentNumber student number assigned for current registration
      */
-    function registerStudent(address student, uint studentNumber) external onlyAdmin{
+    function registerStudent(
+        address student,
+        uint studentNumber
+    )
+        external onlyAdmin
+    {
         require(studentStatus[studentNumber].enrolled == true); // check if the student has enrolled the course
         require(studentStatus[studentNumber].tokenAssigned == false); // ensures a student cannot registers itself with multiple public keys
         studentStatus[studentNumber].tokenAssigned = true;
@@ -148,7 +153,12 @@ contract ValuED {
      * @param lectureNumber the lecture number
      * @param lecture the string identifying the lecture
      */
-    function registerLecture(uint lectureNumber, string calldata lecture) external onlyAdmin{
+    function registerLecture(
+        uint lectureNumber,
+        string calldata lecture
+    )
+        external onlyAdmin
+    {
         hashLectureID[lectureNumber] = bytes2(keccak256(bytes(lecture)));// a hash value of the lecture is stored in the contract. 
     }
     
@@ -157,7 +167,7 @@ contract ValuED {
      * 
      * @param lectureNumber the lecture number
      */
-    function setCurrentLectureNumber(uint lectureNumber) external onlyAdmin{
+    function setCurrentLectureNumber(uint lectureNumber) external onlyAdmin {
         currentLectureNumber = lectureNumber;
     } 
    
@@ -169,7 +179,7 @@ contract ValuED {
      * 
      * @param lecture the lecture (ID string) related with the token claim
      */
-    function claimToken(string calldata lecture) external{
+    function claimToken(string calldata lecture) external {
         require(validStudent[msg.sender] == true);// checks if it's a valid student
         require(hashLectureID[currentLectureNumber] == bytes2(keccak256(bytes(lecture))));//checks if the student has sent a valid id 
         require(attended[msg.sender] != currentLectureNumber);// ensures the student has not already claimed any tokens for this lecture yet.
@@ -188,10 +198,16 @@ contract ValuED {
      * 
      * @param tokens the price of the proposal
      * @param reason the reason describing the proposal
-     * @param email email that can be to send tokens later if public keys are
+     * @param email email to send tokens later if public keys are sent too
      * known
      */
-    function makeProposal(uint tokens, string calldata reason, string calldata email) external{
+    function makeProposal(
+        uint tokens,
+        string calldata reason,
+        string calldata email
+    )
+        external
+    {
         require(validStudent[msg.sender] == true, "Not a valid sender");
         require(studentTokenBalance[msg.sender] >= tokens,"Not enough token");
         Proposal memory proposal;
@@ -214,7 +230,15 @@ contract ValuED {
      * @param time the time for the transaction
      * @param proposalID the proposal ID that contains the (active) offer
      */
-    function sendToken(uint amount, address receiver, string calldata reason,string calldata time, uint proposalID) external{
+    function sendToken(
+        uint amount,
+        address receiver,
+        string calldata reason,
+        string calldata time,
+        uint proposalID
+    )
+        external
+    {
         require(msg.sender!=receiver); // the sender should not be able to send token to itself and make a transaction. 
         require(validStudent[msg.sender] == true, "Not a valid sender"); // checks if the sender is a valid student
         require(validStudent[receiver] == true, "Not a valid recipient"); // checks if the recipient is a valid student
@@ -243,27 +267,6 @@ contract ValuED {
     }
     
     /**
-     * 
-     * 
-     * @param sender the sender of the feedback
-     * @param transactionID the transaction ID of reference
-     * 
-     * @return (can, res)
-     */
-    function canLeaveFeedback(address sender, uint transactionID) view internal returns (bool can, uint res){ 
-        // checks if the person who wants to leave the feedback is sender of tokens AND has not left any feedback for the transaction.
-        if(transactions[transactionID].sender == sender && transactions[transactionID].senderFeedback == -10){
-            res = 1;
-            can = true;
-        }
-        // checks if the person who wants to leave the feedback is reciever of tokens AND has not left any feedback for the transaction.
-        else if(transactions[transactionID].reciever == sender && transactions[transactionID].receiverFeedback == -10){
-            res = 2;
-            can = true;
-        }
-    }
-    
-    /**
      * The sender of the feedback needs to first check the list of the
      * transactions and see which transaction it wants to leave feedback, then
      * it needs to read the transaction ID.
@@ -271,7 +274,7 @@ contract ValuED {
      * @param transactionID the transaction ID of reference
      * @param score the feedback to leave
      */
-    function leaveFeedback(uint transactionID, int score) external{
+    function leaveFeedback(uint transactionID, int score) external {
         require (MIN_SCORE <= score && score <= MAX_SCORE);  // check if the score is valid: MIN_SCORE <= score <= MAX_SCORE
         (bool can, uint res) = canLeaveFeedback(msg.sender, transactionID); // check if the the sender of the feedback is one of the parties involded in the transaction and has not already left any feedback yet. 
         require(can);
@@ -282,6 +285,34 @@ contract ValuED {
         else if (res == 2){ 
             transactions[transactionID].receiverFeedback = score; 
             reputations[transactions[transactionID].sender] += score;
+        }
+    }
+    
+    /**
+     * 
+     * 
+     * @param sender the sender of the feedback
+     * @param transactionID the transaction ID of reference
+     * 
+     * @return (can, res)
+     */
+    function canLeaveFeedback(
+        address sender,
+        uint transactionID
+    )
+        view
+        internal
+        returns (bool can, uint res)
+    { 
+        // checks if the person who wants to leave the feedback is sender of tokens AND has not left any feedback for the transaction.
+        if(transactions[transactionID].sender == sender && transactions[transactionID].senderFeedback == -10){
+            res = 1;
+            can = true;
+        }
+        // checks if the person who wants to leave the feedback is reciever of tokens AND has not left any feedback for the transaction.
+        else if(transactions[transactionID].reciever == sender && transactions[transactionID].receiverFeedback == -10){
+            res = 2;
+            can = true;
         }
     }
 }
